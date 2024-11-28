@@ -56,6 +56,7 @@ router.get('/dashboard', ensureAuthenticated, (req, res) => {
 router.get('/add', ensureAuthenticated, (req, res) => res.render('add', { error: null }));
 
 
+
 router.post('/add', ensureAuthenticated, upload.array('photos', 3), async (req, res) => {
     const { plate, owner, phone, vehicleType, color } = req.body;
     const userId = req.session.user.id;
