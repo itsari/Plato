@@ -1,0 +1,25 @@
+<h1>Add a New Plate</h1>
+<% if (error) { %>
+<p class="error"><%= error %></p>
+<% } %>
+<form action="/add-plate" method="POST" enctype="multipart/form-data">
+  <label for="plate">License Plate:</label>
+  <input type="text" id="plate" name="plate" required />
+
+  <label for="owner">Owner:</label>
+  <input type="text" id="owner" name="owner" />
+
+  <label for="phone">Phone:</label>
+  <input type="text" id="phone" name="phone" />
+
+  <label for="vehicle_type">Vehicle Type:</label>
+  <input type="text" id="vehicle_type" name="vehicle_type" />
+
+  <label for="color">Color:</label>
+  <input type="text" id="color" name="color" />
+
+  <label for="photos">Photos (up to 3):</label>
+  <input type="file" id="photos" name="photos" multiple />
+
+  <button type="submit">Add Plate</button>
+</form>

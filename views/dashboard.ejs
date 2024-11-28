@@ -1,0 +1,28 @@
+<% layout('layouts/layout') %>
+
+<h1>Dashboard</h1>
+<p>Welcome, <%= user.name %>!</p>
+
+<% if (user.isAdmin) { %>
+<h2>All Plates</h2>
+<ul>
+  <% plates.forEach(plate => { %>
+  <li>
+    <strong><%= plate.plate %></strong> - <%= plate.owner || 'No owner' %>
+    <a href="/edit-plate/<%= plate.id %>">Edit</a> |
+    <a href="/delete-plate/<%= plate.id %>">Delete</a>
+  </li>
+  <% }) %>
+</ul>
+<% } else { %>
+<h2>My Plates</h2>
+<ul>
+  <% plates.forEach(plate => { %>
+  <li>
+    <strong><%= plate.plate %></strong> - <%= plate.owner || 'No owner' %>
+    <a href="/edit-plate/<%= plate.id %>">Edit</a> |
+    <a href="/delete-plate/<%= plate.id %>">Delete</a>
+  </li>
+  <% }) %>
+</ul>
+<% } %>
