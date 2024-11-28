@@ -1,14 +1,30 @@
-<h1>Login</h1>
-<% if (error) { %>
-<p class="error"><%= error %></p>
-<% } %>
-<form action="/login" method="POST">
-  <label for="email">Email:</label>
-  <input type="email" id="email" name="email" required />
-
-  <label for="password">Password:</label>
-  <input type="password" id="password" name="password" required />
-
-  <button type="submit">Login</button>
-</form>
-<p>Don't have an account? <a href="/signup">Signup here</a></p>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Login</h1>
+    </header>
+    <div class="container">
+      <form action="/login" method="POST">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required />
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required />
+        <button type="submit">Login</button>
+      </form>
+      <p>Don't have an account? <a href="/signup">Sign up</a></p>
+      <% if (error) { %>
+      <p class="error"><%= error %></p>
+      <% } %>
+    </div>
+    <footer>
+      <p>License Plate Tracker &copy; 2024</p>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Vehicle Details</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f8f9fa;
+        color: #212529;
+      }
+      .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #343a40;
+      }
+      p {
+        margin: 10px 0;
+        font-size: 16px;
+      }
+      p strong {
+        color: #007bff;
+      }
+      h2 {
+        margin-top: 20px;
+        color: #343a40;
+        font-size: 20px;
+      }
+      .photos img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin: 10px auto;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+      }
+      a {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 15px;
+        background: #007bff;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 5px;
+        text-align: center;
+      }
+      a:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Vehicle Details</h1>
+      <p><strong>Plate:</strong> <%= vehicle.plate %></p>
+      <p><strong>Owner:</strong> <%= vehicle.owner %></p>
+      <p><strong>Phone:</strong> <%= vehicle.phone %></p>
+      <p><strong>Vehicle Type:</strong> <%= vehicle.vehicleType %></p>
+      <p><strong>Color:</strong> <%= vehicle.color %></p>
+      <p><strong>Car Maker:</strong> <%= vehicle.car_maker %></p>
+      <p><strong>Model:</strong> <%= vehicle.model %></p>
+      <p><strong>Build Year:</strong> <%= vehicle.build_year %></p>
+      <h2>Photos</h2>
+      <div class="photos">
+        <% photos.forEach(photo => { %>
+        <img
+          src="data:image/jpeg;base64,<%= photo.photo.toString('base64') %>"
+          alt="Vehicle Photo"
+        />
+        <% }); %>
+      </div>
+      <a href="/dashboard">Back to Dashboard</a>
+    </div>
+  </body>
+</html>

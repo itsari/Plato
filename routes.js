@@ -1,190 +1,171 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const { db, getUserByEmail, createUser, addPlate, getPlatesByUser, getAllPlates } = require('./db');
+const { db } = require('./db');
+const multer = require('multer');
+const fs = require('fs');
+const { ensureAuthenticated, ensureAdmin } = require('./middlewares');
 
+const { fetchCarDetails } = require('./helper');
 
 const router = express.Router();
-
-// Middleware for authentication
-function authMiddleware(req, res, next) {
-    if (req.session.userId) return next();
-    res.redirect('/login');
-}
-
-// Home route
-router.get('/', (req, res) => res.redirect('/login'));
+const upload = multer({ dest: 'uploads/' });
 
 // Login routes
-router.get('/login', (req, res) => {
-    res.render('layout', {
-        title: 'Login',
-        user: null, // No user for login page
-        content: 'login', // Pass the view name directly
-        error: null
-    });
-});
-
-
+router.get('/login', (req, res) => res.render('login', { error: null }));
 router.post('/login', (req, res) => {
-    const { email, password } = req.body;
-    getUserByEmail(email, (err, user) => {
-        if (err || !user || !bcrypt.compareSync(password, user.password)) {
-            return res.render('layout', {
-                title: 'Login',
-                user: null,
-                content: `<%- include('login') %>`,
-                error: 'Invalid credentials'
-            });
+    const { username, password } = req.body;
+    db.get('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, user) => {
+        if (user) {
+            req.session.user = user;
+            res.redirect('/dashboard');
+        } else {
+            res.render('login', { error: 'Invalid credentials' });
         }
-        req.session.userId = user.id;
-        req.session.isAdmin = user.isAdmin;
-        res.redirect('/dashboard');
-    });
-});
-// Logout route
-router.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error('Error destroying session:', err);
-            return res.status(500).send('Failed to logout. Please try again.');
-        }
-        res.redirect('/login'); // Redirect to login page after logout
     });
 });
 
 // Signup routes
-
-router.get('/signup', (req, res) => {
-    res.render('layout', {
-        title: 'Signup',
-        user: null, // No user for signup page
-        content: 'signup', // Specify the content view
-        error: null
-    });
-});
-
+router.get('/signup', (req, res) => res.render('signup', { error: null }));
 router.post('/signup', (req, res) => {
-    const { name, email, phone, password } = req.body;
-    const hashedPassword = bcrypt.hashSync(password, 10);
-
-    createUser(name, email, phone, hashedPassword, 0, (err) => {
+    const { username, password, email, phone } = req.body;
+    db.run('INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)', [username, password, email, phone], function (err) {
         if (err) {
-            return res.render('layout', {
-                title: 'Signup',
-                user: null,
-                content: 'signup',
-                error: 'Error creating user'
-            });
+            res.render('signup', { error: 'User already exists' });
+        } else {
+            res.redirect('/login');
         }
-        res.redirect('/login');
     });
 });
 
+// Logout route
+router.get('/logout', (req, res) => {
+    req.session.destroy(() => res.redirect('/login'));
+});
 
 // Dashboard route
-router.get('/dashboard', authMiddleware, (req, res) => {
-    if (req.session.isAdmin) {
-        getAllPlates((err, plates) => {
-            if (err) {
-                return res.status(500).send('Database error');
+router.get('/dashboard', ensureAuthenticated, (req, res) => {
+    const userId = req.session.user.role === 'admin' ? null : req.session.user.id;
+    const sql = userId ? 'SELECT * FROM vehicles WHERE userId = ?' : 'SELECT * FROM vehicles';
+    const params = userId ? [userId] : [];
+
+    db.all(sql, params, (err, vehicles) => {
+        res.render('dashboard', { vehicles, user: req.session.user });
+    });
+});
+
+// Add vehicle routes
+router.get('/add', ensureAuthenticated, (req, res) => res.render('add', { error: null }));
+
+
+router.post('/add', ensureAuthenticated, upload.array('photos', 3), async (req, res) => {
+    const { plate, owner, phone, vehicleType, color } = req.body;
+    const userId = req.session.user.id;
+
+    try {
+        // Fetch missing details for the car
+        const carDetails = await fetchCarDetails(plate);
+
+        // Use fetched details or fallback to user input
+        const finalVehicleType = vehicleType || carDetails.vehicleType || 'Unknown';
+        const finalColor = color || carDetails.color || 'Unknown';
+        const carMaker = carDetails.car_maker || 'Unknown';
+        const model = carDetails.model || 'Unknown';
+        const buildYear = carDetails.build_year || null;
+
+        // Insert the car into the database
+        db.run(
+            `INSERT INTO vehicles (plate, owner, phone, vehicleType, color, car_maker, model, build_year, userId)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [plate, owner, phone, finalVehicleType, finalColor, carMaker, model, buildYear, userId],
+            function (err) {
+                if (err) {
+                    console.error('Database error:', err.message);
+                    res.render('add', { error: 'Failed to add vehicle' });
+                } else {
+                    const vehicleId = this.lastID;
+
+                    // Save uploaded photos
+                    req.files.forEach(file => {
+                        const photo = fs.readFileSync(file.path);
+                        db.run('INSERT INTO photos (vehicleId, photo) VALUES (?, ?)', [vehicleId, photo]);
+                    });
+
+                    res.redirect('/dashboard');
+                }
             }
-            res.render('layout', {
-                title: 'Admin Dashboard',
-                user: req.session,
-                content: 'admin-plates',
-                plates
-            });
-        });
-    } else {
-        getPlatesByUser(req.session.userId, (err, plates) => {
-            if (err) {
-                return res.status(500).send('Database error');
-            }
-            res.render('layout', {
-                title: 'My Dashboard',
-                user: req.session,
-                content: 'my-plates',
-                plates
-            });
-        });
+        );
+    } catch (error) {
+        console.error('Error fetching car details:', error.message);
+        res.render('add', { error: 'Failed to fetch additional car details. Please try again.' });
     }
 });
 
+// router.post('/add', ensureAuthenticated, upload.array('photos', 3), (req, res) => {
+//     const { plate, owner, phone, vehicleType, color } = req.body;
+//     const userId = req.session.user.id;
 
-// Route to display the add plate form
-router.get('/add-plate', authMiddleware, (req, res) => {
-    res.render('layout', {
-        title: 'Add Plate',
-        user: req.session, // Pass user session info
-        content: 'add-plate', // View for the add plate form
-        error: null
+//     db.run('INSERT INTO vehicles (plate, owner, phone, vehicleType, color, userId) VALUES (?, ?, ?, ?, ?, ?)',
+//         [plate, owner, phone, vehicleType, color, userId], function (err) {
+//             if (err) {
+//                 res.render('add', { error: 'Failed to add vehicle' });
+//             } else {
+//                 const vehicleId = this.lastID;
+//                 req.files.forEach(file => {
+//                     const photo = fs.readFileSync(file.path);
+//                     db.run('INSERT INTO photos (vehicleId, photo) VALUES (?, ?)', [vehicleId, photo]);
+//                 });
+//                 res.redirect('/dashboard');
+//             }
+//         });
+// });
+
+// View single vehicle route
+router.get('/vehicle/:id', ensureAuthenticated, (req, res) => {
+    const vehicleId = req.params.id;
+    db.get('SELECT * FROM vehicles WHERE id = ?', [vehicleId], (err, vehicle) => {
+        if (vehicle) {
+            db.all('SELECT * FROM photos WHERE vehicleId = ?', [vehicleId], (err, photos) => {
+                res.render('vehicle', { vehicle, photos });
+            });
+        } else {
+            res.redirect('/dashboard');
+        }
     });
 });
 
-// Route to handle adding a new plate
-router.post('/add-plate', authMiddleware, (req, res) => {
-    const { plate, owner, phone, vehicle_type, color } = req.body;
-    const photos = req.files ? req.files.map(file => file.filename) : [];
+// Edit vehicle routes
+router.get('/edit/:id', ensureAuthenticated, (req, res) => {
+    const vehicleId = req.params.id;
+    db.get('SELECT * FROM vehicles WHERE id = ?', [vehicleId], (err, vehicle) => {
+        res.render('edit', { vehicle, error: null });
+    });
+});
+router.post('/edit/:id', ensureAuthenticated, upload.array('photos', 3), (req, res) => {
+    const { plate, owner, phone, vehicleType, color } = req.body;
+    const vehicleId = req.params.id;
 
-    addPlate(plate, owner, phone, vehicle_type, color, photos, req.session.userId, (err) => {
-        if (err) {
-            return res.render('layout', {
-                title: 'Add Plate',
-                user: req.session,
-                content: 'add-plate',
-                error: 'Error adding plate. Please try again.'
-            });
+    db.run('UPDATE vehicles SET plate = ?, owner = ?, phone = ?, vehicleType = ?, color = ? WHERE id = ?',
+        [plate, owner, phone, vehicleType, color, vehicleId], function (err) {
+            if (err) {
+                res.render('edit', { vehicle: req.body, error: 'Failed to update vehicle' });
+            } else {
+                req.files.forEach(file => {
+                    const photo = fs.readFileSync(file.path);
+                    db.run('INSERT INTO photos (vehicleId, photo) VALUES (?, ?)', [vehicleId, photo]);
+                });
+                res.redirect('/dashboard');
+            }
+        });
+});
+
+// Delete vehicle route
+router.post('/delete/:id', ensureAuthenticated, (req, res) => {
+    const vehicleId = req.params.id;
+    db.run('DELETE FROM vehicles WHERE id = ?', [vehicleId], function (err) {
+        if (!err) {
+            db.run('DELETE FROM photos WHERE vehicleId = ?', [vehicleId]);
         }
         res.redirect('/dashboard');
     });
 });
-// Route to display the edit plate form
-router.get('/edit-plate/:id', authMiddleware, (req, res) => {
-    const plateId = req.params.id;
-
-    db.get('SELECT * FROM plates WHERE id = ?', [plateId], (err, plate) => {
-        if (err || !plate) {
-            return res.status(404).send('Plate not found');
-        }
-
-        res.render('layout', {
-            title: 'Edit Plate',
-            user: req.session, // Pass user session info
-            content: 'edit-plate', // View for the edit plate form
-            plate // Pass the plate details to the view
-        });
-    });
-});
-
-// Route to handle updating a plate
-router.post('/edit-plate/:id', authMiddleware, (req, res) => {
-    const plateId = req.params.id;
-    const { plate, owner, phone, vehicle_type, color } = req.body;
-    const photos = req.files ? req.files.map(file => file.filename) : [];
-
-    db.run(
-        `UPDATE plates SET plate = ?, owner = ?, phone = ?, vehicle_type = ?, color = ?, photos = ? WHERE id = ?`,
-        [plate, owner, phone, vehicle_type, color, JSON.stringify(photos), plateId],
-        (err) => {
-            if (err) {
-                return res.status(500).send('Error updating plate');
-            }
-            res.redirect('/dashboard'); // Redirect back to the dashboard
-        }
-    );
-});
-// Route to handle deleting a plate
-router.get('/delete-plate/:id', authMiddleware, (req, res) => {
-    const plateId = req.params.id;
-
-    db.run('DELETE FROM plates WHERE id = ?', [plateId], (err) => {
-        if (err) {
-            console.error('Error deleting plate:', err);
-            return res.status(500).send('Failed to delete plate. Please try again.');
-        }
-        res.redirect('/dashboard'); // Redirect back to dashboard after deletion
-    });
-});
-
 
 module.exports = router;

@@ -17,7 +17,10 @@
   },
   "homepage": "https://github.com/itsari/Plato#readme",
   "dependencies": {
+    "axios": "^1.7.8",
     "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "cheerio": "^1.0.0",
     "ejs": "^3.1.10",
     "express": "^4.21.1",
     "express-session": "^1.18.1",

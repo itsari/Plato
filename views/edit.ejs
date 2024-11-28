@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Edit Vehicle</title>
+  </head>
+  <body>
+    <h1>Edit Vehicle</h1>
+    <form
+      action="/edit/<%= vehicle.id %>"
+      method="POST"
+      enctype="multipart/form-data"
+    >
+      <label for="plate">Plate:</label>
+      <input
+        type="text"
+        id="plate"
+        name="plate"
+        value="<%= vehicle.plate %>"
+        required
+      />
+      <br />
+      <label for="owner">Owner:</label>
+      <input type="text" id="owner" name="owner" value="<%= vehicle.owner %>" />
+      <br />
+      <label for="phone">Phone:</label>
+      <input type="text" id="phone" name="phone" value="<%= vehicle.phone %>" />
+      <br />
+      <label for="vehicleType">Vehicle Type:</label>
+      <input
+        type="text"
+        id="vehicleType"
+        name="vehicleType"
+        value="<%= vehicle.vehicleType %>"
+      />
+      <br />
+      <label for="color">Color:</label>
+      <input type="text" id="color" name="color" value="<%= vehicle.color %>" />
+      <br />
+      <label for="carMaker">Car Maker:</label>
+      <input
+        type="text"
+        id="carMaker"
+        name="carMaker"
+        value="<%= vehicle.car_maker %>"
+      />
+      <br />
+      <label for="model">Model:</label>
+      <input type="text" id="model" name="model" value="<%= vehicle.model %>" />
+      <br />
+      <label for="buildYear">Build Year:</label>
+      <input
+        type="number"
+        id="buildYear"
+        name="buildYear"
+        value="<%= vehicle.build_year %>"
+        min="1886"
+        max="<%= new Date().getFullYear() %>"
+      />
+      <br />
+      <label for="photos">Add New Photos:</label>
+      <input type="file" id="photos" name="photos" multiple accept="image/*" />
+      <br />
+      <button type="submit">Update Vehicle</button>
+    </form>
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+    <% if (error) { %>
+    <p style="color: red"><%= error %></p>
+    <% } %>
+  </body>
+</html>

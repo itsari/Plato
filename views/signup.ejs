@@ -1,20 +1,34 @@
-<h1>Signup</h1>
-<% if (error) { %>
-<p class="error"><%= error %></p>
-<% } %>
-<form action="/signup" method="POST">
-  <label for="name">Full Name:</label>
-  <input type="text" id="name" name="name" required />
-
-  <label for="email">Email:</label>
-  <input type="email" id="email" name="email" required />
-
-  <label for="phone">Phone:</label>
-  <input type="text" id="phone" name="phone" required />
-
-  <label for="password">Password:</label>
-  <input type="password" id="password" name="password" required />
-
-  <button type="submit">Signup</button>
-</form>
-<p>Already have an account? <a href="/login">Login here</a></p>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Sign Up</h1>
+    </header>
+    <div class="container">
+      <form action="/signup" method="POST">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required />
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required />
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required />
+        <label for="phone">Phone:</label>
+        <input type="text" id="phone" name="phone" required />
+        <button type="submit">Sign Up</button>
+      </form>
+      <p>Already have an account? <a href="/login">Login</a></p>
+      <% if (error) { %>
+      <p class="error"><%= error %></p>
+      <% } %>
+    </div>
+    <footer>
+      <p>License Plate Tracker &copy; 2024</p>
+    </footer>
+  </body>
+</html>

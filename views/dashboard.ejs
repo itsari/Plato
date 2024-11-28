@@ -1,28 +1,172 @@
-<% layout('layouts/layout') %>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+      .search-bar {
+        margin-bottom: 15px;
+        display: flex;
+        gap: 10px;
+      }
 
-<h1>Dashboard</h1>
-<p>Welcome, <%= user.name %>!</p>
+      .search-bar input,
+      .search-bar select {
+        padding: 10px;
+        font-size: 16px;
+      }
 
-<% if (user.isAdmin) { %>
-<h2>All Plates</h2>
-<ul>
-  <% plates.forEach(plate => { %>
-  <li>
-    <strong><%= plate.plate %></strong> - <%= plate.owner || 'No owner' %>
-    <a href="/edit-plate/<%= plate.id %>">Edit</a> |
-    <a href="/delete-plate/<%= plate.id %>">Delete</a>
-  </li>
-  <% }) %>
-</ul>
-<% } else { %>
-<h2>My Plates</h2>
-<ul>
-  <% plates.forEach(plate => { %>
-  <li>
-    <strong><%= plate.plate %></strong> - <%= plate.owner || 'No owner' %>
-    <a href="/edit-plate/<%= plate.id %>">Edit</a> |
-    <a href="/delete-plate/<%= plate.id %>">Delete</a>
-  </li>
-  <% }) %>
-</ul>
-<% } %>
+      .search-bar button {
+        padding: 10px 15px;
+        font-size: 16px;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      .search-bar button:hover {
+        background: #0056b3;
+      }
+
+      th.sortable:hover {
+        cursor: pointer;
+        background-color: #f1f1f1;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Welcome, <%= user.username %>!</h1>
+    </header>
+    <div class="container">
+      <p><a href="/logout">Logout</a></p>
+      <h2>Your Vehicles</h2>
+      <p><a href="/add" class="action-buttons">Add New Vehicle</a></p>
+
+      <!-- Search and Filter -->
+      <div class="search-bar">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search by plate, owner, or phone..."
+        />
+        <select id="filterType">
+          <option value="">Filter by Type</option>
+          <% vehicles.map(vehicle => vehicle.vehicleType).filter((v, i, a) =>
+          a.indexOf(v) === i).forEach(type => { %>
+          <option value="<%= type %>"><%= type %></option>
+          <% }); %>
+        </select>
+        <button onclick="clearFilters()">Clear Filters</button>
+      </div>
+
+      <!-- Vehicles Table -->
+      <table id="vehiclesTable">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortTable(0)">Plate</th>
+            <th class="sortable" onclick="sortTable(1)">Owner</th>
+            <th class="sortable" onclick="sortTable(2)">Phone</th>
+            <th>Vehicle Type</th>
+            <th class="sortable" onclick="sortTable(3)">Color</th>
+            <th>Car Maker</th>
+            <th>Model</th>
+            <th class="sortable" onclick="sortTable(4)">Build Year</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <% vehicles.forEach(vehicle => { %>
+          <tr>
+            <td><%= vehicle.plate %></td>
+            <td><%= vehicle.owner %></td>
+            <td><%= vehicle.phone %></td>
+            <td><%= vehicle.vehicleType %></td>
+            <td><%= vehicle.color %></td>
+            <td><%= vehicle.car_maker %></td>
+            <td><%= vehicle.model %></td>
+            <td><%= vehicle.build_year %></td>
+            <td>
+              <div class="action-buttons">
+                <a href="/vehicle/<%= vehicle.id %>">View</a>
+                <a href="/edit/<%= vehicle.id %>">Edit</a>
+                <form
+                  action="/delete/<%= vehicle.id %>"
+                  method="POST"
+                  style="display: inline"
+                >
+                  <button type="submit" class="delete">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <footer>
+      <p>License Plate Tracker &copy; 2024</p>
+    </footer>
+
+    <script>
+      // Search functionality
+      const searchInput = document.getElementById("searchInput");
+      const filterType = document.getElementById("filterType");
+      const tableBody = document.getElementById("tableBody");
+      const rows = Array.from(tableBody.querySelectorAll("tr"));
+
+      searchInput.addEventListener("input", filterTable);
+      filterType.addEventListener("change", filterTable);
+
+      function filterTable() {
+        const searchValue = searchInput.value.toLowerCase();
+        const filterValue = filterType.value.toLowerCase();
+
+        rows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          const matchesSearch =
+            cells[0].textContent.toLowerCase().includes(searchValue) ||
+            cells[1].textContent.toLowerCase().includes(searchValue) ||
+            cells[2].textContent.toLowerCase().includes(searchValue);
+
+          const matchesFilter =
+            !filterValue || cells[3].textContent.toLowerCase() === filterValue;
+
+          row.style.display = matchesSearch && matchesFilter ? "" : "none";
+        });
+      }
+
+      function clearFilters() {
+        searchInput.value = "";
+        filterType.value = "";
+        filterTable();
+      }
+
+      // Sort functionality
+      function sortTable(columnIndex) {
+        const rowsArray = Array.from(rows);
+        const isAscending = tableBody.getAttribute("data-sort-order") !== "asc";
+        tableBody.setAttribute("data-sort-order", isAscending ? "asc" : "desc");
+
+        rowsArray.sort((a, b) => {
+          const cellA = a.cells[columnIndex].textContent.trim().toLowerCase();
+          const cellB = b.cells[columnIndex].textContent.trim().toLowerCase();
+
+          if (!isNaN(cellA) && !isNaN(cellB)) {
+            return isAscending ? cellA - cellB : cellB - cellA;
+          }
+
+          return isAscending
+            ? cellA.localeCompare(cellB)
+            : cellB.localeCompare(cellA);
+        });
+
+        rowsArray.forEach((row) => tableBody.appendChild(row));
+      }
+    </script>
+  </body>
+</html>

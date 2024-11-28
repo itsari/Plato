@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Add Vehicle</title>
+  </head>
+  <body>
+    <h1>Add New Vehicle</h1>
+    <form action="/add" method="POST" enctype="multipart/form-data">
+      <label for="plate">Plate:</label>
+      <input type="text" id="plate" name="plate" required />
+      <br />
+      <label for="owner">Owner:</label>
+      <input type="text" id="owner" name="owner" />
+      <br />
+      <label for="phone">Phone:</label>
+      <input type="text" id="phone" name="phone" />
+      <br />
+      <label for="vehicleType">Vehicle Type:</label>
+      <input type="text" id="vehicleType" name="vehicleType" />
+      <br />
+      <label for="color">Color:</label>
+      <input type="text" id="color" name="color" />
+      <br />
+      <label for="photos">Photos:</label>
+      <input type="file" id="photos" name="photos" multiple accept="image/*" />
+      <br />
+      <button type="submit">Add Vehicle</button>
+    </form>
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+    <% if (error) { %>
+    <p style="color: red"><%= error %></p>
+    <% } %>
+  </body>
+</html>
